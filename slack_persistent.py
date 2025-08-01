@@ -137,22 +137,39 @@ class ClaudePersistentBridge:
             print(f"[CLAUDE CMD] Channel ID: {channel_id}")
             print(f"[CLAUDE CMD] Is first run: {is_first}")
             
-            # 프로세스 실행 및 추적
+            # Windows 콘솔 코드 페이지를 UTF-8로 설정
+            chcp_cmd = f'chcp 65001 > nul && {cmd}'
+            
+            # 프로세스 실행 및 추적 (바이트 모드로 실행 후 수동 디코딩)
             with self.process_lock:
                 self.current_process = subprocess.Popen(
-                    cmd,
+                    chcp_cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    text=True,
+                    text=False,  # 바이트 모드
                     env=env,
                     shell=True,
-                    executable=r'C:\Windows\System32\cmd.exe',
-                    encoding='utf-8',
-                    errors='replace'
+                    executable=r'C:\Windows\System32\cmd.exe'
                 )
             
             try:
-                stdout, stderr = self.current_process.communicate(timeout=600)
+                stdout_bytes, stderr_bytes = self.current_process.communicate(timeout=600)
+                
+                # 바이트를 문자열로 디코딩 (UTF-8 우선, 실패시 CP949)
+                def decode_output(data):
+                    if not data:
+                        return ""
+                    try:
+                        return data.decode('utf-8')
+                    except UnicodeDecodeError:
+                        try:
+                            return data.decode('cp949')
+                        except:
+                            return data.decode('utf-8', errors='replace')
+                
+                stdout = decode_output(stdout_bytes)
+                stderr = decode_output(stderr_bytes)
+                
                 result = type('Result', (), {
                     'returncode': self.current_process.returncode,
                     'stdout': stdout,
@@ -168,6 +185,7 @@ class ClaudePersistentBridge:
             print(f"[SUBPROCESS] Return code: {result.returncode}")
             stdout_safe = result.stdout if result.stdout else "(empty)"
             stderr_safe = result.stderr if result.stderr else "(empty)"
+            
             print(f"[SUBPROCESS] stdout: {stdout_safe[:500]}{'...' if len(stdout_safe) > 500 else ''}")
             print(f"[SUBPROCESS] stderr: {stderr_safe[:500]}{'...' if len(stderr_safe) > 500 else ''}")
             
