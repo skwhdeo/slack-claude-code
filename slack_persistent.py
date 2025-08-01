@@ -152,6 +152,7 @@ class ClaudePersistentBridge:
                     executable=r'C:\Windows\System32\cmd.exe'
                 )
             
+            result = None
             try:
                 stdout_bytes, stderr_bytes = self.current_process.communicate(timeout=600)
                 
@@ -178,9 +179,17 @@ class ClaudePersistentBridge:
             except subprocess.TimeoutExpired:
                 self.kill_current_process()
                 return "Command timed out (600s)"
+            except Exception as e:
+                # 프로세스가 강제 종료된 경우 등의 예외 처리
+                print(f"[PROCESS] Exception during communication: {str(e)}")
+                return f"Process interrupted: {str(e)}"
             finally:
                 with self.process_lock:
                     self.current_process = None
+            
+            # result가 None인 경우 처리
+            if result is None:
+                return "Process was terminated"
             
             print(f"[SUBPROCESS] Return code: {result.returncode}")
             stdout_safe = result.stdout if result.stdout else "(empty)"
@@ -313,7 +322,8 @@ class ClaudePersistentBridge:
             if event.get("type") == "message":
                 # 봇 메시지 무시
                 if event.get("bot_id") or event.get("user") == self.bot_user_id:
-                    print(f"[BOT MESSAGE IGNORED] bot_id={event.get('bot_id')}, user={event.get('user')}")
+                    ignored_text = event.get("text", "")[:100]  # 처음 100자만 표시
+                    print(f"[BOT MESSAGE IGNORED] bot_id={event.get('bot_id')}, user={event.get('user')}, text={ignored_text}")
                     client.ack(req)
                     return
                     
