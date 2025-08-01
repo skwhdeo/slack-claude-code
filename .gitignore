@@ -1,0 +1,50 @@
+# 환경 변수
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 로그
+*.log
+logs/
+
+# 세션 파일
+.slack-claude-sessions.json
+
+# 테스트
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# 배포
+dist/
+build/
+*.egg-info/
